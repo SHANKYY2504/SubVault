@@ -1,4 +1,4 @@
-import ListHeading from "@/components/listHeading";
+import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import {

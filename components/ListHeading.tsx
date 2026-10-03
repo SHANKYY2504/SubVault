@@ -1,6 +1,6 @@
 import { Text, TouchableOpacity, View } from "react-native";
 
-const listHeading = ({ title }: ListHeadingProps) => {
+const ListHeading = ({ title }: ListHeadingProps) => {
   return (
     <View className="list-head">
       <Text className="list-title">{title}</Text>
@@ -12,4 +12,4 @@ const listHeading = ({ title }: ListHeadingProps) => {
   );
 };
 
-export default listHeading;
+export default ListHeading;
