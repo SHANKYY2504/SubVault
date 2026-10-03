@@ -12,8 +12,8 @@ export function getAuthErrorMessage(error: unknown): string {
     .filter((message): message is string => Boolean(message));
 
   return (
-    details?.join(" ") ??
-    clerkError.message ??
+    details?.join(" ") ||
+    clerkError.message ||
     "We couldn't complete that request. Please try again."
   );
 }

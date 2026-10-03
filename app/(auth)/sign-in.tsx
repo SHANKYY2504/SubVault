@@ -274,10 +274,7 @@ export default function SignIn() {
             <Pressable
               accessibilityRole="button"
               className="self-end py-1"
-              onPress={() => {
-                setMode("reset-code");
-                void sendResetCode();
-              }}
+              onPress={() => void sendResetCode()}
             >
               <Text className="auth-link">Forgot password?</Text>
             </Pressable>
