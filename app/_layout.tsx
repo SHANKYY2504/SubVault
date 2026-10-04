@@ -1,10 +1,12 @@
 import "@/global.css";
-import { ClerkProvider, useAuth } from "@clerk/expo";
+import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
+import { PostHogProvider } from "posthog-react-native";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { posthog } from "@/lib/posthog";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,6 +18,21 @@ if (!publishableKey) {
 
 function AppNavigator() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!posthog || !isLoaded || !isSignedIn || !user?.id) return;
+
+    const email = user.primaryEmailAddress?.emailAddress;
+    posthog.identify(
+      user.id,
+      email
+        ? {
+            $set: { email },
+          }
+        : undefined,
+    );
+  }, [isLoaded, isSignedIn, user?.id, user?.primaryEmailAddress?.emailAddress]);
 
   if (!isLoaded) {
     return (
@@ -62,7 +79,13 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
-      <AppNavigator />
+      {posthog ? (
+        <PostHogProvider client={posthog}>
+          <AppNavigator />
+        </PostHogProvider>
+      ) : (
+        <AppNavigator />
+      )}
     </ClerkProvider>
   );
 }

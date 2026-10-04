@@ -3,6 +3,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { useAuth, useSignIn } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
+import { usePostHog } from "posthog-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
@@ -14,6 +15,7 @@ export default function SignIn() {
   const { isSignedIn } = useAuth();
   const { signIn, fetchStatus } = useSignIn();
   const router = useRouter();
+  const posthog = usePostHog();
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -30,6 +32,7 @@ export default function SignIn() {
       setFormError(getAuthErrorMessage(error));
       return;
     }
+    posthog?.capture("user_signed_in");
     router.replace("/(tabs)");
   };
 
@@ -160,6 +163,7 @@ export default function SignIn() {
         setFormError(getAuthErrorMessage(sendError));
         return;
       }
+      posthog?.capture("password_reset_requested");
       setMode("reset-code");
     } catch (error) {
       setFormError(getAuthErrorMessage(error));
