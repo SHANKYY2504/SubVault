@@ -6,7 +6,7 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { PostHogProvider } from "posthog-react-native";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
@@ -58,6 +58,27 @@ function AppNavigator() {
   );
 }
 
+function AppProviders({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const userId = isSignedIn ? (user?.id ?? null) : null;
+  const subscriptionsScope = userId ?? "signed-out";
+
+  if (!isLoaded || (isSignedIn && !userId)) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color="#ea7a53" />
+      </View>
+    );
+  }
+
+  return (
+    <SubscriptionsProvider key={subscriptionsScope} userId={userId}>
+      {children}
+    </SubscriptionsProvider>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "sans-regular": require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
@@ -80,7 +101,7 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
-      <SubscriptionsProvider>
+      <AppProviders>
         {posthog ? (
           <PostHogProvider client={posthog}>
             <AppNavigator />
@@ -88,7 +109,7 @@ export default function RootLayout() {
         ) : (
           <AppNavigator />
         )}
-      </SubscriptionsProvider>
+      </AppProviders>
     </ClerkProvider>
   );
 }

@@ -1,5 +1,13 @@
 import { HOME_SUBSCRIPTIONS } from "@/constants/data";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    type ReactNode,
+} from "react";
+import { ActivityIndicator, View } from "react-native";
 
 type SubscriptionsContextValue = {
   subscriptions: Subscription[];
@@ -12,7 +20,21 @@ const SubscriptionsContext = createContext<
 
 type SubscriptionsProviderProps = {
   children: ReactNode;
+  userId: string | null;
 };
+
+const STORAGE_KEY_PREFIX = "@subvault/subscriptions/";
+
+function isSubscription(value: unknown): value is Subscription {
+  if (typeof value !== "object" || value === null) return false;
+  const subscription = value as Partial<Subscription>;
+  return (
+    typeof subscription.id === "string" &&
+    typeof subscription.name === "string" &&
+    typeof subscription.price === "number" &&
+    typeof subscription.billing === "string"
+  );
+}
 
 const fallbackColors = [
   "#ffcdb2",
@@ -95,9 +117,61 @@ function getUniqueColor(
 
 export function SubscriptionsProvider({
   children,
+  userId,
 }: SubscriptionsProviderProps) {
   const [subscriptions, setSubscriptions] =
     useState<Subscription[]>(HOME_SUBSCRIPTIONS);
+  const [isLoaded, setIsLoaded] = useState(userId === null);
+  const storageKey = userId ? `${STORAGE_KEY_PREFIX}${userId}` : null;
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    if (!storageKey) {
+      setSubscriptions(HOME_SUBSCRIPTIONS);
+      setIsLoaded(true);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setIsLoaded(false);
+    AsyncStorage.getItem(storageKey)
+      .then((storedValue) => {
+        if (!isCurrent) return;
+
+        if (storedValue) {
+          const parsedValue: unknown = JSON.parse(storedValue);
+          if (Array.isArray(parsedValue)) {
+            const savedSubscriptions = parsedValue.filter(isSubscription);
+            if (savedSubscriptions.length > 0) {
+              setSubscriptions(savedSubscriptions);
+              return;
+            }
+          }
+        }
+
+        setSubscriptions(HOME_SUBSCRIPTIONS);
+      })
+      .catch(() => {
+        if (isCurrent) setSubscriptions(HOME_SUBSCRIPTIONS);
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoaded(true);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey || !isLoaded) return;
+
+    AsyncStorage.setItem(storageKey, JSON.stringify(subscriptions)).catch(
+      () => undefined,
+    );
+  }, [isLoaded, storageKey, subscriptions]);
 
   const addSubscription = (subscription: Subscription) => {
     setSubscriptions((currentSubscriptions) => {
@@ -111,6 +185,14 @@ export function SubscriptionsProvider({
       return [{ ...subscription, color }, ...currentSubscriptions];
     });
   };
+
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color="#ea7a53" />
+      </View>
+    );
+  }
 
   return (
     <SubscriptionsContext.Provider value={{ subscriptions, addSubscription }}>
