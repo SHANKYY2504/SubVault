@@ -2,6 +2,7 @@ import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { useClerk, useUser } from "@clerk/expo";
 import { router } from "expo-router";
 import { styled } from "nativewind";
+import { usePostHog } from "posthog-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
@@ -11,6 +12,7 @@ const SafeAreaView = styled(RNSafeAreaView);
 const Settings = () => {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const posthog = usePostHog();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,6 +21,8 @@ const Settings = () => {
     setError("");
     try {
       await signOut();
+      posthog?.capture("user_signed_out");
+      posthog?.reset();
       router.replace("/(auth)/sign-in");
     } catch (signOutError) {
       setError(getAuthErrorMessage(signOutError));
