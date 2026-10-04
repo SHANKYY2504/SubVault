@@ -365,6 +365,10 @@
     @apply mt-auto max-h-[85%] rounded-t-3xl bg-background;
   }
 
+  .modal-container-fullscreen {
+    @apply mt-0 max-h-full flex-1 rounded-none;
+  }
+
   .modal-header {
     @apply flex-row items-center justify-between border-b border-border px-5 py-4;
   }

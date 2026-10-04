@@ -1,4 +1,6 @@
+import { SubscriptionsProvider } from "@/components/SubscriptionsProvider";
 import "@/global.css";
+import { posthog } from "@/lib/posthog";
 import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
@@ -6,7 +8,6 @@ import { SplashScreen, Stack } from "expo-router";
 import { PostHogProvider } from "posthog-react-native";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { posthog } from "@/lib/posthog";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -79,13 +80,15 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
-      {posthog ? (
-        <PostHogProvider client={posthog}>
+      <SubscriptionsProvider>
+        {posthog ? (
+          <PostHogProvider client={posthog}>
+            <AppNavigator />
+          </PostHogProvider>
+        ) : (
           <AppNavigator />
-        </PostHogProvider>
-      ) : (
-        <AppNavigator />
-      )}
+        )}
+      </SubscriptionsProvider>
     </ClerkProvider>
   );
 }
