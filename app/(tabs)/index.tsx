@@ -3,11 +3,7 @@ import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import { useSubscriptions } from "@/components/SubscriptionsProvider";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
-import {
-  HOME_BALANCE,
-  HOME_USER,
-  UPCOMING_SUBSCRIPTIONS,
-} from "@/constants/data";
+import { HOME_BALANCE, HOME_USER } from "@/constants/data";
 import { icons } from "@/constants/icons";
 import images from "@/constants/images";
 import "@/global.css";
@@ -23,6 +19,28 @@ const SafeAreaView = styled(RNSafeAreaView);
 export default function App() {
   const posthog = usePostHog();
   const { subscriptions, addSubscription } = useSubscriptions();
+  const upcomingSubscriptions = subscriptions
+    .filter((subscription) => {
+      if (
+        subscription.status === "paused" ||
+        subscription.status === "cancelled" ||
+        !subscription.renewalDate
+      ) {
+        return false;
+      }
+
+      const renewalDate = dayjs(subscription.renewalDate);
+      return (
+        renewalDate.isValid() && !renewalDate.isBefore(dayjs().startOf("day"))
+      );
+    })
+    .map((subscription) => ({
+      ...subscription,
+      daysLeft: dayjs(subscription.renewalDate)
+        .startOf("day")
+        .diff(dayjs().startOf("day"), "day"),
+    }))
+    .sort((first, second) => first.daysLeft - second.daysLeft);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
@@ -71,7 +89,7 @@ export default function App() {
               <ListHeading title="Upcoming" />
 
               <FlatList
-                data={UPCOMING_SUBSCRIPTIONS}
+                data={upcomingSubscriptions}
                 renderItem={({ item }) => (
                   <UpcomingSubscriptionCard {...item} />
                 )}
